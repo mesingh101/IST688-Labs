@@ -10,6 +10,27 @@ if "client" not in st.session_state:
 
 client = st.session_state.client
 
+#system prompt controls how the chatbot should respond
+system_prompt = {
+    "role": "system",
+    "content": """
+    You are a helpful chatbot.
+    Explain all answers so that a 10-year-old can understand them.
+
+    When the user asks a question:
+    1. Answer the question.
+    2. End by asking exactly: "Do you want more info?"
+
+    If the user says yes:
+    - Give more information about the previous topic.
+    - End by asking exactly: "Do you want more info?"
+
+    If the user says no:
+    - Do not give more information about the previous topic.
+    - Ask: "What can I help you with?"
+    """
+}
+
 #initialize session state for messages if not already initialized
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -31,18 +52,21 @@ if prompt := st.chat_input("What can I help you with?"):
         {"role": "user", "content": prompt}
     )
 
-    # Keep the last two user messages and their assistant responses
-    conversation_buffer = st.session_state.messages[-5:]
+#keep the last two user messages and their assistant responses
+conversation_buffer = st.session_state.messages[-3:]
 
-    stream = client.chat.completions.create(
-        model="gpt-5-nano",
-        messages=conversation_buffer,
-        stream=True
-    )
+#always include the system prompt with the conversation buffer
+messages_to_send = [system_prompt] + conversation_buffer
 
-    with st.chat_message("assistant"):
-        response = st.write_stream(stream)
+stream = client.chat.completions.create(
+    model="gpt-5-nano",
+    messages=messages_to_send,
+    stream=True
+)
 
-    st.session_state.messages.append(
-        {"role": "assistant", "content": response}
+with st.chat_message("assistant"):
+    response = st.write_stream(stream)
+
+st.session_state.messages.append(
+     {"role": "assistant", "content": response}
     )
