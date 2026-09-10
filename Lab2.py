@@ -21,7 +21,7 @@ st.write(
 if use_advanced_model:
     model = "gpt-5-mini"
 else:
-    model = "gpt-5-nano"
+    model = "gpt-5-nano" 
     
 # Ask user for their OpenAI API key via `st.text_input`.
 # Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
