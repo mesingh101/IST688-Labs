@@ -31,15 +31,18 @@ if prompt := st.chat_input("What can I help you with?"):
         {"role": "user", "content": prompt}
     )
 
+    # Keep the last two user messages and their assistant responses
+    conversation_buffer = st.session_state.messages[-4:]
+
     stream = client.chat.completions.create(
         model="gpt-5-nano",
-        messages=st.session_state.messages,
+        messages=conversation_buffer,
         stream=True
     )
 
     with st.chat_message("assistant"):
         response = st.write_stream(stream)
-        
+
     st.session_state.messages.append(
         {"role": "assistant", "content": response}
     )
