@@ -32,7 +32,7 @@ if prompt := st.chat_input("What can I help you with?"):
     )
 
     # Keep the last two user messages and their assistant responses
-    conversation_buffer = st.session_state.messages[-4:]
+    conversation_buffer = st.session_state.messages[-5:]
 
     stream = client.chat.completions.create(
         model="gpt-5-nano",
