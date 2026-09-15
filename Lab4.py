@@ -63,6 +63,26 @@ if "Lab4_VectorDB" not in st.session_state:
 
 vector_db = st.session_state.Lab4_VectorDB
 
+# test the vector database
+test_search = "Data Science Overview"
+
+test_embedding_response = client.embeddings.create(
+    model="text-embedding-3-small",
+    input=test_search
+)
+
+test_embedding = test_embedding_response.data[0].embedding
+
+results = vector_db.query(
+    query_embeddings=[test_embedding],
+    n_results=3
+)
+
+st.write("Top 3 documents:")
+
+for i, metadata in enumerate(results["metadatas"][0], start=1):
+    st.write(f"{i}. {metadata['filename']}")
+
 #system prompt controls how the chatbot should respond
 system_prompt = {
     "role": "system",
