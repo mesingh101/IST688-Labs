@@ -18,6 +18,18 @@ if "client" not in st.session_state:
 
 client = st.session_state.client
 
+# extract text from a PDF file
+def extract_pdf_text(file_path):
+    pdf = fitz.open(file_path)
+    text = ""
+
+    for page in pdf:
+        text += page.get_text()
+
+    pdf.close()
+
+    return text
+
 # create the vector database using the course PDF files
 def create_vector_db():
     chroma_client = chromadb.Client()
@@ -35,14 +47,8 @@ def create_vector_db():
         if filename.endswith(".pdf"):
             file_path = os.path.join(pdf_folder, filename)
 
-            # open the PDF and extract its text
-            pdf = fitz.open(file_path)
-            text = ""
-
-            for page in pdf:
-                text += page.get_text()
-
-            pdf.close()
+            # extract the text from the PDF
+            text = extract_pdf_text(file_path)
 
             # create an embedding for the PDF text
             embedding_response = client.embeddings.create(
