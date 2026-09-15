@@ -34,9 +34,10 @@ def extract_pdf_text(file_path):
 def create_vector_db():
     chroma_client = chromadb.Client()
 
-    collection = chroma_client.create_collection(
-        name="Lab4Collection"
-    )
+    collection = chroma_client.get_or_create_collection(
+    name="Lab4Collection"
+)
+    
 
     # naming folder containing the 7 course PDF files
     pdf_folder = "Lab-04-Data"
