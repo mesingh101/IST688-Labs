@@ -63,44 +63,65 @@ if "Lab4_VectorDB" not in st.session_state:
 
 vector_db = st.session_state.Lab4_VectorDB
 
-# test the vector database
-test_search = "Data Science Overview"
+## test the vector database
+#test_search = "Data Science Overview"
 
-test_embedding_response = client.embeddings.create(
-    model="text-embedding-3-small",
-    input=test_search
-)
+#test_embedding_response = client.embeddings.create(
+   # model="text-embedding-3-small",
+   # input=test_search
+#)
 
-test_embedding = test_embedding_response.data[0].embedding
+#test_embedding = test_embedding_response.data[0].embedding
 
-results = vector_db.query(
-    query_embeddings=[test_embedding],
-    n_results=3
-)
+#results = vector_db.query(
+    #query_embeddings=[test_embedding],
+   # n_results=3
+#)
 
-st.write("Top 3 documents:")
+#st.write("Top 3 documents:")
 
-for i, metadata in enumerate(results["metadatas"][0], start=1):
-    st.write(f"{i}. {metadata['filename']}")
+#for i, metadata in enumerate(results["metadatas"][0], start=1):
+   # st.write(f"{i}. {metadata['filename']}")
 
-#system prompt controls how the chatbot should respond
+#^ commented out the test code to avoid cluttering the app with test results
+
+# retrieve relevant course information from the vector database
+def retrieve_course_info(question):
+
+    question_embedding_response = client.embeddings.create(
+        model="text-embedding-3-small",
+        input=question
+    )
+
+    question_embedding = question_embedding_response.data[0].embedding
+
+    results = vector_db.query(
+        query_embeddings=[question_embedding],
+        n_results=3
+    )
+
+    retrieved_text = "\n\n".join(results["documents"][0])
+
+    return retrieved_text
+
+# system prompt controls how the chatbot should respond
 system_prompt = {
     "role": "system",
     "content": """
-    You are a helpful chatbot.
-    Explain all answers so that a 10-year-old can understand them.
+    You are a course information chatbot.
 
-    When the user asks a question:
-    1. Answer the question.
-    2. End by asking exactly: "Do you want more info?"
+    Answer the user's question using the course information retrieved
+    from the vector database.
 
-    If the user says yes:
-    - Give more information about the previous topic.
-    - End by asking exactly: "Do you want more info?"
+    If the retrieved course information contains the answer, clearly
+    state that your answer is based on information retrieved from the
+    course documents.
 
-    If the user says no:
-    - Do not give more information about the previous topic.
-    - Ask: "What can I help you with?"
+    If the retrieved information does not contain enough information
+    to answer the question, clearly say that the course documents
+    do not provide enough information.
+
+    Keep your answers clear and helpful.
     """
 }
 
@@ -116,6 +137,18 @@ for message in st.session_state.messages:
 #get user input and store it in session state
 if prompt := st.chat_input("What can I help you with?"):
 
+    # retrieve course information related to the user's question
+    retrieved_text = retrieve_course_info(prompt)
+
+    # add the retrieved information to the user's question
+    rag_prompt = f"""
+    User question:
+    {prompt}
+
+    Retrieved course information:
+    {retrieved_text}
+    """
+
     
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -125,21 +158,24 @@ if prompt := st.chat_input("What can I help you with?"):
         {"role": "user", "content": prompt}
     )
 
-#keep the last two user messages and their assistant responses
-conversation_buffer = st.session_state.messages[-3:]
+    # send the retrieved course information and question to the LLM
+    messages_to_send = [
+        system_prompt,
+        {
+            "role": "user",
+            "content": rag_prompt
+        }
+    ]
 
-#always include the system prompt with the conversation buffer
-messages_to_send = [system_prompt] + conversation_buffer
+    stream = client.chat.completions.create(
+        model="gpt-5-nano",
+        messages=messages_to_send,
+        stream=True
+    )
 
-stream = client.chat.completions.create(
-    model="gpt-5-nano",
-    messages=messages_to_send,
-    stream=True
-)
+    with st.chat_message("assistant"):
+        response = st.write_stream(stream)
 
-with st.chat_message("assistant"):
-    response = st.write_stream(stream)
-
-st.session_state.messages.append(
-     {"role": "assistant", "content": response}
+    st.session_state.messages.append(
+        {"role": "assistant", "content": response}
     )
