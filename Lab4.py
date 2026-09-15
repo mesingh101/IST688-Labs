@@ -1,3 +1,8 @@
+import sys
+# workaround to avoid the error "ModuleNotFoundError: No module named 'sqlite3'" when using chromadb with streamlit
+__import__("pysqlite3")
+sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
+
 import streamlit as st
 from openai import OpenAI
 import chromadb
